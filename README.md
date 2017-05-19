@@ -1,4 +1,4 @@
-# Transmissions - Single Entity Socket Datagram Communication in C#
+# Transmissions - Single Entity Socket Communication in C#
 
 Transmissions allows you to send and receive strictly matching data.
 
