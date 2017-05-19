@@ -40,33 +40,50 @@ namespace Transmissions
         public void HaltService()
         {
             active = false;
+            tcpListener.Stop();
         }
 
         private void Service()
         {
-            tcpListener = new TcpListener(IPAddress.Any, port);
-            tcpListener.Start();
+            try {
+                tcpListener = new TcpListener(IPAddress.Any, port);
+                tcpListener.Start();
 
-            while (active)
-            {
-                Socket socket = tcpListener.AcceptSocket();
-
-                ITransmissible received = listener.InstantiateTransmissible();
-
-                if (socket.Receive(buffer) != received.GetByteLength())
+                while (active)
                 {
-                    if (throwError)
+                    Socket socket = tcpListener.AcceptSocket();
+
+                    ITransmissible received = listener.InstantiateTransmissible();
+
+                    if (socket.Receive(buffer) != received.GetByteLength())
                     {
-                        throw new Exception("Wrong Length Received");
+                        if (throwError)
+                        {
+                            throw new Exception("Wrong Length Received");
+                        }
+                        return;
                     }
-                    return;
+
+                    received.Deserialize(buffer);
+                    listener.OnReceive(received);
                 }
-
-                received.Deserialize(buffer);
-                listener.OnReceive(received);
             }
-
-            tcpListener.Stop();
+            catch (SocketException e)
+            {
+                if (!active)
+                    Console.WriteLine("Termination Requested.");
+                else
+                    Console.WriteLine(e);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            finally
+            {
+                tcpListener.Stop();
+                thread.Abort();
+            }
         }
 
         public static IPAddress GetLocalIPAddress()
